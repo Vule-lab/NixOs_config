@@ -24,6 +24,11 @@ networking.interfaces.enp0s3.ipv4.addresses = [{
 networking.defaultGateway = "192.168.1.1";
 networking.nameservers = [ "8.8.8.8" "1.1.1.1" ];
 
+services.jellyfin = {
+  enable = true;          # Aktivira Jellyfin servis
+  openFirewall = true;    # Otvara portove (HTTP/HTTPS) na vatrozidu
+};
+
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
@@ -97,6 +102,7 @@ environment.systemPackages = with pkgs; [
     curl
     git
     htop
+
   ];
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
