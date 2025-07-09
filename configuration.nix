@@ -27,7 +27,24 @@ networking.nameservers = [ "8.8.8.8" "1.1.1.1" ];
 services.jellyfin = {
   enable = true;          # Aktivira Jellyfin servis
   openFirewall = true;    # Otvara portove (HTTP/HTTPS) na vatrozidu
+
 };
+
+services.nextcloud = {
+  enable = true;
+  hostName = "192.168.1.100";
+  configureRedis = true;  # Za bolje performanse
+  https = false;          # HTTPS će se dodati kasnije kroz Traefik
+  database.createLocally = true;
+  config = {
+	adminuser = "admin";
+  	adminpassFile = "/etc/nixos/nextcloud-admin-pass"; # Datoteka s lozinkom
+	dbtype = "pgsql";
+       };
+};
+
+
+services.redis.enable = true;
 
 
   # Use the systemd-boot EFI boot loader.
