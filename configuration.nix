@@ -11,9 +11,9 @@
     ];
 console.keyMap = "croat";
 services.openssh.enable = true;
-services.openssh.permitRootLogin = "yes";
-services.openssh.passwordAuthentication = true;
-networking.firewall.allowedTCPPorts = [ 22  80  443 ];
+services.openssh.settings.PermitRootLogin = "yes";
+services.openssh.settings.PasswordAuthentication = true;
+networking.firewall.allowedTCPPorts = [ 22  80  443  8080  8082 ];
 
 networking.interfaces.enp0s3.useDHCP = false;
 networking.interfaces.enp0s3.ipv4.addresses = [{
@@ -30,6 +30,8 @@ services.jellyfin = {
 
 };
 
+disabledModules = [ "services/web-servers/nginx.nix" ];
+
 services.nextcloud = {
   enable = true;
   hostName = "192.168.1.100";
@@ -43,8 +45,67 @@ services.nextcloud = {
        };
 };
 
+services.nginx = {
+  enable = true;
+  virtualHosts."192.168.1.100" = {
+    default = true;
+    listen = [{
+      addr = "0.0.0.0";
+      port = 8082;
+    }];
+  };
+};
 
-services.redis.enable = true;
+
+services.redis.servers."".enable = true;
+
+services.traefik = {
+  enable = true;
+  staticConfigOptions = {
+    entryPoints = {
+      web = {
+        address = ":80";
+      };
+      traefik = {
+        address = ":8080";
+      };
+    };
+    providers = {
+      file = {
+        filename = "/etc/traefik/routes.toml";
+        watch = true;
+      };
+    };
+    api = {
+      dashboard = true;
+      insecure = true;  # privremeno, za lokalni test
+    };
+  };
+};
+
+
+  
+environment.etc."traefik/routes.toml".text = ''
+[http.routers.nextcloud]
+rule = "PathPrefix(`/nextcloud`)"
+service = "nextcloud"
+entryPoints = ["web"]
+
+[http.services.nextcloud.loadBalancer]
+[[http.services.nextcloud.loadBalancer.servers]]
+url = "http://127.0.0.1:8082"
+
+[http.routers.jellyfin]
+rule = "PathPrefix(`/jellyfin`)"
+service = "jellyfin"
+entryPoints = ["web"]
+
+[http.services.jellyfin.loadBalancer]
+[[http.services.jellyfin.loadBalancer.servers]]
+url = "http://localhost:8096"
+'';
+
+
 
 
   # Use the systemd-boot EFI boot loader.
