@@ -59,28 +59,40 @@
     };
   };
 
-
-disabledModules = [ "services/web-servers/traefik.nix" ];
-systemd.services.traefik.enable = false;
-
-  # routes.toml konfiguracija za Traefik (Nextcloud + Jellyfin)
-  environment.etc."traefik/routes.toml".text = ''
-    [http.routers.nextcloud]
-    rule = "PathPrefix(`/nextcloud`)"
-    service = "nextcloud"
-
-    [http.services.nextcloud.loadBalancer]
-      [[http.services.nextcloud.loadBalancer.servers]]
-      url = "http://127.0.0.1:8082"
-
-    [http.routers.jellyfin]
-    rule = "PathPrefix(`/jellyfin`)"
-    service = "jellyfin"
-
-    [http.services.jellyfin.loadBalancer]
-      [[http.services.jellyfin.loadBalancer.servers]]
-      url = "http://127.0.0.1:8096"
-  '';
+#Traefik
+services.traefik = {
+  enable = true;
+  staticConfigOptions = {
+    api = {
+      dashboard = true;
+      insecure = true;
+    };
+    entryPoints = {
+      web.address = ":80";
+      traefik.address = ":8080";  # Dashboard port
+    };
+  };
+  dynamicConfigOptions = {
+    http = {
+      routers = {
+        nextcloud = {
+          rule = "Host(`192.168.1.100`) && PathPrefix(`/`)";
+          service = "nextcloud";
+          entryPoints = [ "web" ];
+        };
+        jellyfin = {
+          rule = "Host(`192.168.1.100`) && PathPrefix(`/jellyfin`)";
+          service = "jellyfin";
+          entryPoints = [ "web" ];
+        };
+      };
+      services = {
+        nextcloud.loadBalancer.servers = [{ url = "http://127.0.0.1:8082"; }];
+        jellyfin.loadBalancer.servers = [{ url = "http://127.0.0.1:8096"; }];
+      };
+    };
+  };
+};
 
   # Osnovni alati
   environment.systemPackages = with pkgs; [
